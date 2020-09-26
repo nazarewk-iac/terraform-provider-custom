@@ -1,12 +1,12 @@
 ---
-layout: "scaffolding"
-page_title: "Provider: Scaffolding"
-sidebar_current: "docs-scaffolding-index"
+layout: "extended"
+page_title: "Provider: Extended"
+sidebar_current: "docs-extended-index"
 description: |-
-  Terraform provider scaffolding.
+  Terraform provider extended.
 ---
 
-# Scaffolding Provider
+# Extended Provider
 
 Use this paragraph to give a high-level overview of your provider, and any configuration it requires.
 
@@ -15,11 +15,11 @@ Use the navigation to the left to read about the available resources.
 ## Example Usage
 
 ```hcl
-provider "scaffolding" {
+provider "extended" {
 }
 
 # Example resource configuration
-resource "scaffolding_resource" "example" {
+resource "extended_resource" "example" {
   # ...
 }
 ```

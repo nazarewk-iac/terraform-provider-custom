@@ -4,9 +4,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceScaffolding() *schema.Resource {
+func dataSourceExtended() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceScaffoldingRead,
+		Read: dataSourceExtendedRead,
 
 		Schema: map[string]*schema.Schema{
 			"sample_attribute": {
@@ -17,6 +17,6 @@ func dataSourceScaffolding() *schema.Resource {
 	}
 }
 
-func dataSourceScaffoldingRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceExtendedRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }

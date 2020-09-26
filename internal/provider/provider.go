@@ -7,10 +7,10 @@ import (
 func New() *schema.Provider {
 	return &schema.Provider{
 		DataSourcesMap: map[string]*schema.Resource{
-			"scaffolding_data_source": dataSourceScaffolding(),
+			"extended_data_source": dataSourceExtended(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"scaffolding_resource": resourceScaffolding(),
+			"extended_resource": resourceExtended(),
 		},
 	}
 }

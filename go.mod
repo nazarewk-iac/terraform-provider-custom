@@ -1,5 +1,5 @@
-module github.com/hashicorp/terraform-provider-scaffolding
+module github.com/nazarewk-iac/terraform-provider-extended
 
-go 1.12
+go 1.15
 
 require github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.1
