@@ -18,26 +18,34 @@ func resourceExtended() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"program_create": {
-				Type:     schema.TypeList,
-				Elem:     schema.TypeString,
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 				Required: true,
 				MinItems: 1,
 			},
 			"program_read": {
-				Type:     schema.TypeList,
-				Elem:     schema.TypeString,
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 				Required: true,
 				MinItems: 1,
 			},
 			"program_update": {
-				Type:     schema.TypeList,
-				Elem:     schema.TypeString,
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 				Required: true,
 				MinItems: 1,
 			},
 			"program_delete": {
-				Type:     schema.TypeList,
-				Elem:     schema.TypeString,
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 				Required: true,
 				MinItems: 1,
 			},

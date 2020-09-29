@@ -30,7 +30,6 @@ func NewProgramFromResource(ctx context.Context, data *schema.ResourceData, conf
 		data:           data,
 		providerConfig: config,
 		programKey:     programKey,
-		ProgramSpec:    data.Get(programKey).([]string),
 	}
 
 	// Can't cast interface{} -> []string directly, need to do this manually
@@ -87,12 +86,11 @@ func (p *Program) setupDir() (diags diag.Diagnostics) {
 	}
 
 	for name, content := range p.files {
-		currentPath := path.Join(p.tmpDir, name)
 		perm, ok := p.perms[name]
 		if !ok {
 			perm = 0400
 		}
-		diags = append(diags, p.createFile(currentPath, content, perm)...)
+		diags = append(diags, p.createFile(name, content, perm)...)
 		if diags.HasError() {
 			return
 		}
@@ -103,11 +101,11 @@ func (p *Program) setupDir() (diags diag.Diagnostics) {
 func (p *Program) executeCommand() (diags diag.Diagnostics) {
 	cmd := exec.CommandContext(p.context, p.ProgramSpec[0], p.ProgramSpec[1:]...)
 	cmd.Env = p.env
-	if err := cmd.Start(); err != nil {
+	if output, err := cmd.CombinedOutput(); err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  fmt.Sprintf("Error when running %s", p.programKey),
-			Detail:   err.Error(),
+			Detail:   fmt.Sprintf("ERROR=%v\nCOMMAND %v\nOUTPUT (%d bytes):\n%v", err.Error(), cmd.String(), len(output), string(output)),
 		})
 		return
 	}
