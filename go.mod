@@ -1,4 +1,4 @@
-module github.com/nazarewk-iac/terraform-provider-extended
+module github.com/nazarewk-iac/terraform-provider-custom
 
 go 1.15
 

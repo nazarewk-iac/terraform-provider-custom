@@ -6,12 +6,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceExtended() *schema.Resource {
+func resourceCustom() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceExtendedCreate,
-		ReadContext:   resourceExtendedRead,
-		UpdateContext: resourceExtendedUpdate,
-		DeleteContext: resourceExtendedDelete,
+		CreateContext: resourceCustomCreate,
+		ReadContext:   resourceCustomRead,
+		UpdateContext: resourceCustomUpdate,
+		DeleteContext: resourceCustomDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
@@ -68,25 +68,25 @@ func resourceExtended() *schema.Resource {
 	}
 }
 
-func resourceExtendedCreate(ctx context.Context, data *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
+func resourceCustomCreate(ctx context.Context, data *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
 	config := meta.(*Config)
 	diags = append(diags, runProgram(ctx, data, config, "program_create")...)
 	return
 }
 
-func resourceExtendedRead(ctx context.Context, data *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
+func resourceCustomRead(ctx context.Context, data *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
 	config := meta.(*Config)
 	diags = append(diags, runProgram(ctx, data, config, "program_read")...)
 	return
 }
 
-func resourceExtendedUpdate(ctx context.Context, data *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
+func resourceCustomUpdate(ctx context.Context, data *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
 	config := meta.(*Config)
 	diags = append(diags, runProgram(ctx, data, config, "program_update")...)
 	return
 }
 
-func resourceExtendedDelete(ctx context.Context, data *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
+func resourceCustomDelete(ctx context.Context, data *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
 	config := meta.(*Config)
 	diags = append(diags, runProgram(ctx, data, config, "program_delete")...)
 	return

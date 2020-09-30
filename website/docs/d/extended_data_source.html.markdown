@@ -1,19 +1,19 @@
 ---
-layout: "extended"
-page_title: "Extended: extended_data_source"
-sidebar_current: "docs-extended-data-source"
+layout: "custom"
+page_title: "Custom: custom_data_source"
+sidebar_current: "docs-custom-data-source"
 description: |-
-  Sample data source in the Terraform provider extended.
+  Sample data source in the Terraform provider custom.
 ---
 
-# extended_data_source
+# custom_data_source
 
-Sample data source in the Terraform provider extended.
+Sample data source in the Terraform provider custom.
 
 ## Example Usage
 
 ```hcl
-data "extended_data_source" "example" {
+data "custom_data_source" "example" {
   sample_attribute = "foo"
 }
 ```

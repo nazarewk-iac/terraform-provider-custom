@@ -1,12 +1,12 @@
 ---
-layout: "extended"
-page_title: "Provider: Extended"
-sidebar_current: "docs-extended-index"
+layout: "custom"
+page_title: "Provider: Custom"
+sidebar_current: "docs-custom-index"
 description: |-
-  Terraform provider extended.
+  Terraform provider custom.
 ---
 
-# Extended Provider
+# Custom Provider
 
 Use this paragraph to give a high-level overview of your provider, and any configuration it requires.
 
@@ -15,11 +15,11 @@ Use the navigation to the left to read about the available resources.
 ## Example Usage
 
 ```hcl
-provider "extended" {
+provider "custom" {
 }
 
 # Example resource configuration
-resource "extended_resource" "example" {
+resource "custom_resource" "example" {
   # ...
 }
 ```

@@ -26,7 +26,7 @@ func New() *schema.Provider {
 		ConfigureContextFunc: providerConfigure,
 		DataSourcesMap:       map[string]*schema.Resource{},
 		ResourcesMap: map[string]*schema.Resource{
-			"extended_resource": resourceExtended(),
+			"custom_resource": resourceCustom(),
 		},
 	}
 }

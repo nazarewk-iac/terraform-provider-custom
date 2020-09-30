@@ -7,24 +7,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccResourceExtended(t *testing.T) {
+func TestAccResourceCustom(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceExtended,
+				Config: testAccResourceCustom,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
-						"extended_resource.foo", "state", regexp.MustCompile("^qwe")),
+						"custom_resource.foo", "state", regexp.MustCompile("^qwe")),
 				),
 			},
 		},
 	})
 }
 
-const testAccResourceExtended = `
-resource "extended_resource" "foo" {
+const testAccResourceCustom = `
+resource "custom_resource" "foo" {
   input = "qwe"
   program_create = ["/usr/bin/sh", "-x", "-c", "echo $EXT_DIR && /usr/bin/cat $EXT_FILE_input > $EXT_FILE_state && /usr/bin/sha256sum $EXT_FILE_input > $EXT_FILE_id"]
   program_read = ["/usr/bin/sh", "-c", "cat $EXT_FILE_state"]

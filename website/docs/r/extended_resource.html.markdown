@@ -1,19 +1,19 @@
 ---
-layout: "extended"
-page_title: "Extended: extended_resource"
-sidebar_current: "docs-extended-resource"
+layout: "custom"
+page_title: "Custom: custom_resource"
+sidebar_current: "docs-custom-resource"
 description: |-
-  Sample resource in the Terraform provider extended.
+  Sample resource in the Terraform provider custom.
 ---
 
-# extended_resource
+# custom_resource
 
-Sample resource in the Terraform provider extended.
+Sample resource in the Terraform provider custom.
 
 ## Example Usage
 
 ```hcl
-resource "extended_resource" "example" {
+resource "custom_resource" "example" {
   sample_attribute = "foo"
 }
 ```
