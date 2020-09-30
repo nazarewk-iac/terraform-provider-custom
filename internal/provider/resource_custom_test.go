@@ -27,6 +27,10 @@ const testAccResourceCustom = `locals {
   script = <<EOT
   set -xeuo pipefail
 
+  main() {
+	"cmd_$@"
+  }
+
   cmd_update() {
 	file_name="$(cat "$EXT_FILE_input" | tee "$EXT_FILE_id" "$EXT_FILE_output")"
 	cat "$EXT_FILE_state" | tee "$EXT_FILE_state" > "$file_name"
@@ -43,8 +47,8 @@ const testAccResourceCustom = `locals {
   cmd_delete() {
 	rm "$(cat "$EXT_FILE_input")"
   }
-  echo "$@"
-  "cmd_$@"
+
+  main "$@"
   EOT
 
   program = ["sh", "-c", local.script, "command_string"]
