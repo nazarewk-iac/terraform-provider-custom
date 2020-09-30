@@ -2,6 +2,7 @@ package provider
 
 import (
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -13,14 +14,38 @@ func TestAccResourceCustom(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceCustom,
+				Config: replacedState("stateQWE"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestMatchResourceAttr("custom_resource.foo", "state", regexp.MustCompile("^qwe$")),
+					resource.TestMatchResourceAttr("custom_resource.foo", "state", regexp.MustCompile("^stateQWE$")),
+					resource.TestMatchResourceAttr("custom_resource.foo", "output", regexp.MustCompile("^/tmp/terraform-provider-custom_resource_test$")),
+				),
+			},
+			{
+				Config:             replacedState("stateQWE"),
+				ExpectNonEmptyPlan: false,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestMatchResourceAttr("custom_resource.foo", "state", regexp.MustCompile("^stateQWE$")),
+					resource.TestMatchResourceAttr("custom_resource.foo", "output", regexp.MustCompile("^/tmp/terraform-provider-custom_resource_test$")),
+				),
+			},
+			{
+				Config:             replacedState("stateASD"),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: replacedState("stateASD"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestMatchResourceAttr("custom_resource.foo", "state", regexp.MustCompile("^stateASD$")),
 					resource.TestMatchResourceAttr("custom_resource.foo", "output", regexp.MustCompile("^/tmp/terraform-provider-custom_resource_test$")),
 				),
 			},
 		},
 	})
+}
+
+func replacedState(replacement string) string {
+	return strings.ReplaceAll(testAccResourceCustom, "STATE_PLACEHOLDER", replacement)
 }
 
 const testAccResourceCustom = `locals {
@@ -56,7 +81,7 @@ const testAccResourceCustom = `locals {
 
 resource "custom_resource" "foo" {
   input = "/tmp/terraform-provider-custom_resource_test"
-  state = "qwe"
+  state = "STATE_PLACEHOLDER"
 
   program_create = concat(local.program, ["update"])
   program_read = concat(local.program, ["read"])

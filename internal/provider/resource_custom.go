@@ -151,7 +151,15 @@ func resourceCustomUpdate(ctx context.Context, data *schema.ResourceData, meta i
 		return
 	}
 
-	data.SetId("")
+	diags = append(diags, p.storeId()...)
+	if diags.HasError() {
+		return
+	}
+
+	diags = append(diags, p.storeAttributes("state", "output", "output_sensitive")...)
+	if diags.HasError() {
+		return
+	}
 
 	return
 }
@@ -159,5 +167,7 @@ func resourceCustomUpdate(ctx context.Context, data *schema.ResourceData, meta i
 func resourceCustomDelete(ctx context.Context, data *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
 	config := meta.(*Config)
 	diags = append(diags, runProgram(ctx, data, config, "delete", "program_delete")...)
+
+	data.SetId("")
 	return
 }
