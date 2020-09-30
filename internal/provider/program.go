@@ -31,15 +31,14 @@ func Program(ctx context.Context, data *schema.ResourceData, config *Config) *pr
 	}
 
 	p.files = map[string]string{
-		"provider_input":           p.providerConfig.Input,
-		"provider_input_sensitive": p.providerConfig.InputSensitive,
-		"input":                    p.data.Get("input").(string),
-		"input_sensitive":          p.data.Get("input_sensitive").(string),
-		"output":                   p.data.Get("output").(string),
-		"output_sensitive":         p.data.Get("output_sensitive").(string),
-		"state":                    newStateV.(string),
-		"old_state":                oldStateV.(string),
-		"id":                       p.data.Id(),
+		"provider_input":   p.providerConfig.Input,
+		"input":            p.data.Get("input").(string),
+		"input_sensitive":  p.data.Get("input_sensitive").(string),
+		"output":           p.data.Get("output").(string),
+		"output_sensitive": p.data.Get("output_sensitive").(string),
+		"state":            newStateV.(string),
+		"old_state":        oldStateV.(string),
+		"id":               p.data.Id(),
 	}
 
 	p.perms = map[string]os.FileMode{
