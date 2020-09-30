@@ -16,19 +16,58 @@ func TestAccResourceCustom(t *testing.T) {
 				Config: testAccResourceCustom,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
-						"custom_resource.foo", "state", regexp.MustCompile("^qwe")),
+						"custom_resource.foo", "state", regexp.MustCompile("^.*\nqwe$")),
 				),
 			},
 		},
 	})
 }
 
-const testAccResourceCustom = `
+const testAccResourceCustom = `locals {
+  create_update = <<EOT
+	file_name="$(cat "$EXT_FILE_input" | tee "$EXT_FILE_id")"
+	echo "$file_name" > "$EXT_FILE_state"
+	cat "$EXT_FILE_input_sensitive" | tee -a "$EXT_FILE_state" > "$file_name"
+  EOT
+}
+
 resource "custom_resource" "foo" {
-  input = "qwe"
-  program_create = ["/usr/bin/sh", "-x", "-c", "echo $EXT_DIR && /usr/bin/cat $EXT_FILE_input > $EXT_FILE_state && /usr/bin/sha256sum $EXT_FILE_input > $EXT_FILE_id"]
-  program_read = ["/usr/bin/sh", "-c", "cat $EXT_FILE_state"]
-  program_update = ["/usr/bin/sh", "-c", "cat $EXT_FILE_input > $EXT_FILE_state && /usr/bin/sha256sum $EXT_FILE_input > $EXT_FILE_id"]
-  program_delete = ["/usr/bin/sh", "-c", "echo -n > $EXT_FILE_state"]
+  input = "/tmp/terraform-provider-custom_resource_test"
+  input_sensitive = "qwe"
+  program_create = [
+    "sh",
+    "-xeuo",
+    "pipefail",
+    "-c",
+    local.create_update,
+  ]
+  program_read = [
+    "sh",
+    "-xeuo",
+    "pipefail",
+    "-c",
+    <<EOT
+	file_name="$(cat "$EXT_FILE_input")"
+	cat "$file_name"
+	cat "$EXT_FILE_state"
+	cat "$file_name" > "$EXT_FILE_state"
+  	EOT
+  ]
+  program_update = [
+    "sh",
+    "-xeuo",
+    "pipefail",
+    "-c",
+    local.create_update,
+  ]
+  program_delete = [
+    "sh",
+    "-xeuo",
+    "pipefail",
+    "-c",
+    <<EOT
+	rm "$(cat "$EXT_FILE_input")"
+  	EOT
+  ]
 }
 `

@@ -1,6 +1,7 @@
 package provider
 
-const TEMP_DIR_PATTERN = ".terraform-provider-custom.tmp-*"
+const TempDirBase = ".terraform/terraform-provider-custom"
+const TempDirPattern = "*"
 
 type Config struct {
 	Input          string

@@ -11,32 +11,22 @@ import (
 	"path"
 )
 
-type Program struct {
-	ProgramSpec    []string
+type program struct {
 	providerConfig *Config
 	data           *schema.ResourceData
 	context        context.Context
-	programKey     string
+	name           string
 	tmpDir         string
-	env            []string
 	files          map[string]string
 	perms          map[string]os.FileMode
 }
 
-func NewProgramFromResource(ctx context.Context, data *schema.ResourceData, config *Config, programKey string) *Program {
+func Program(ctx context.Context, data *schema.ResourceData, config *Config) *program {
 	oldStateV, newStateV := data.GetChange("state")
-	p := &Program{
+	p := &program{
 		context:        ctx,
 		data:           data,
 		providerConfig: config,
-		programKey:     programKey,
-	}
-
-	// Can't cast interface{} -> []string directly, need to do this manually
-	programSpecV := data.Get(programKey).([]interface{})
-	p.ProgramSpec = make([]string, len(programSpecV))
-	for _, obj := range programSpecV {
-		p.ProgramSpec = append(p.ProgramSpec, obj.(string))
 	}
 
 	p.files = map[string]string{
@@ -54,18 +44,10 @@ func NewProgramFromResource(ctx context.Context, data *schema.ResourceData, conf
 		"id":    0600,
 	}
 
-	p.env = os.Environ()
-	p.env = append(p.env, fmt.Sprintf("%s=%s", "EXT_DIR", p.tmpDir))
-
-	for name, _ := range p.files {
-		currentPath := path.Join(p.tmpDir, name)
-		p.env = append(p.env, fmt.Sprintf("EXT_FILE_%s=%s", name, currentPath))
-	}
-
 	return p
 }
 
-func (p *Program) setupDir() (diags diag.Diagnostics) {
+func (p *program) openDir() (diags diag.Diagnostics) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
@@ -75,11 +57,20 @@ func (p *Program) setupDir() (diags diag.Diagnostics) {
 		})
 		return
 	}
-	p.tmpDir, err = ioutil.TempDir(cwd, TEMP_DIR_PATTERN)
+
+	if err := os.MkdirAll(TempDirBase, 0700); err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("Error creating temporary directory parent %s in %s", TempDirBase, cwd),
+			Detail:   err.Error(),
+		})
+		return
+	}
+	p.tmpDir, err = ioutil.TempDir(TempDirBase, TempDirPattern)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  fmt.Sprintf("Error creating temporary directory %s in %s", TEMP_DIR_PATTERN, cwd),
+			Summary:  fmt.Sprintf("Error creating temporary directory %s in %s", TempDirBase, cwd),
 			Detail:   err.Error(),
 		})
 		return
@@ -97,22 +88,53 @@ func (p *Program) setupDir() (diags diag.Diagnostics) {
 	}
 	return
 }
-
-func (p *Program) executeCommand() (diags diag.Diagnostics) {
-	cmd := exec.CommandContext(p.context, p.ProgramSpec[0], p.ProgramSpec[1:]...)
-	cmd.Env = p.env
-	if output, err := cmd.CombinedOutput(); err != nil {
+func (p *program) prepareEnv() (env []string, diags diag.Diagnostics) {
+	env = append(env, os.Environ()...)
+	if len(p.tmpDir) == 0 {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  fmt.Sprintf("Error when running %s", p.programKey),
-			Detail:   fmt.Sprintf("ERROR=%v\nCOMMAND %v\nOUTPUT (%d bytes):\n%v", err.Error(), cmd.String(), len(output), string(output)),
+			Summary:  "Cannot prepareEnv() because tmpDir is empty!",
 		})
 		return
+	}
+
+	env = append(env, fmt.Sprintf("%s=%s", "EXT_DIR", p.tmpDir))
+
+	for name, _ := range p.files {
+		currentPath := path.Join(p.tmpDir, name)
+		env = append(env, fmt.Sprintf("EXT_FILE_%s=%s", name, currentPath))
 	}
 	return
 }
 
-func (p *Program) storeNewId() (diags diag.Diagnostics) {
+func (p *program) executeCommand(key string) (diags diag.Diagnostics) {
+	args := p.getArgs(key)
+	cmd := exec.CommandContext(p.context, args[0], args[1:]...)
+	env, d := p.prepareEnv()
+	diags = append(diags, d...)
+	if diags.HasError() {
+		return
+	}
+	cmdRepr := ToString(args)
+
+	cmd.Env = env
+	output, err := cmd.CombinedOutput()
+	diags = append(diags, diag.Diagnostic{
+		Severity: diag.Warning,
+		Summary:  fmt.Sprintf("Combined output (%d bytes) of %s: %s", len(output), p.name, cmdRepr),
+		Detail:   string(output),
+	})
+	if err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("Error when running %s", p.name),
+			Detail:   fmt.Sprintf("ERROR=%v\nCOMMAND %v\nOUTPUT (%d bytes):\n%v", err.Error(), cmdRepr, len(output), string(output)),
+		})
+	}
+	return
+}
+
+func (p *program) storeNewId() (diags diag.Diagnostics) {
 	text, diags := p.readFile("id")
 	if diags.HasError() {
 		return
@@ -121,7 +143,7 @@ func (p *Program) storeNewId() (diags diag.Diagnostics) {
 	return
 }
 
-func (p *Program) setNewState() (diags diag.Diagnostics) {
+func (p *program) setNewState() (diags diag.Diagnostics) {
 	text, diags := p.readFile("state")
 	if diags.HasError() {
 		return
@@ -130,7 +152,7 @@ func (p *Program) setNewState() (diags diag.Diagnostics) {
 	if err := p.data.Set("state", text); err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  fmt.Sprintf("Error when setting \"state\" attribute during %s", p.programKey),
+			Summary:  fmt.Sprintf("Error when setting \"state\" attribute during %s", p.name),
 			Detail:   err.Error(),
 		})
 		return
@@ -138,23 +160,40 @@ func (p *Program) setNewState() (diags diag.Diagnostics) {
 	return
 }
 
-func runProgram(ctx context.Context, data *schema.ResourceData, config *Config, programKey string) (diags diag.Diagnostics) {
-	p := NewProgramFromResource(ctx, data, config, programKey)
-	diags = append(diags, p.setupDir()...)
+func (p *program) getArgs(key string) (spec []string) {
+	programSpecV := p.data.Get(key).([]interface{})
+	spec = make([]string, len(programSpecV))
+	for i, obj := range programSpecV {
+		spec[i] = obj.(string)
+	}
+	return spec
+}
+
+func (p *program) closeDir() (diags diag.Diagnostics) {
+	if len(p.tmpDir) == 0 {
+		return
+	}
+	if err := os.RemoveAll(p.tmpDir); err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  fmt.Sprintf("Error when cleaning up temporary directory %s", p.tmpDir),
+			Detail:   err.Error(),
+		})
+	}
+	p.tmpDir = ""
+	return
+}
+
+func runProgram(ctx context.Context, data *schema.ResourceData, config *Config, name string, commandKey string) (diags diag.Diagnostics) {
+	p := Program(ctx, data, config)
+	p.name = name
+	diags = append(diags, p.openDir()...)
 	if diags.HasError() {
 		return
 	}
-	defer func() {
-		if err := os.RemoveAll(p.tmpDir); err != nil {
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  fmt.Sprintf("Error when cleaning up temporary directory %s", p.tmpDir),
-				Detail:   err.Error(),
-			})
-		}
-	}()
+	defer func() { diags = append(diags, p.closeDir()...) }()
 
-	diags = append(diags, p.executeCommand()...)
+	diags = append(diags, p.executeCommand(commandKey)...)
 	if diags.HasError() {
 		return
 	}
@@ -172,7 +211,7 @@ func runProgram(ctx context.Context, data *schema.ResourceData, config *Config, 
 	return
 }
 
-func (p *Program) readFile(name string) (text string, diags diag.Diagnostics) {
+func (p *program) readFile(name string) (text string, diags diag.Diagnostics) {
 	fullPath := path.Join(p.tmpDir, name)
 	content, err := ioutil.ReadFile(fullPath)
 	if err != nil {
@@ -186,7 +225,7 @@ func (p *Program) readFile(name string) (text string, diags diag.Diagnostics) {
 	return
 }
 
-func (p *Program) createFile(name string, content string, perm os.FileMode) (diags diag.Diagnostics) {
+func (p *program) createFile(name string, content string, perm os.FileMode) (diags diag.Diagnostics) {
 	fullPath := path.Join(p.tmpDir, name)
 	file, err := os.OpenFile(fullPath, os.O_CREATE|os.O_WRONLY, perm)
 	if err != nil {

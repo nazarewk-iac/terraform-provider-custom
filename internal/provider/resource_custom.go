@@ -22,7 +22,7 @@ func resourceCustom() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				Required: true,
+				Optional: true,
 				MinItems: 1,
 			},
 			"program_read": {
@@ -62,7 +62,7 @@ func resourceCustom() *schema.Resource {
 			"state": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "",
+				Computed: true,
 			},
 		},
 	}
@@ -70,24 +70,81 @@ func resourceCustom() *schema.Resource {
 
 func resourceCustomCreate(ctx context.Context, data *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
 	config := meta.(*Config)
-	diags = append(diags, runProgram(ctx, data, config, "program_create")...)
+	p := Program(ctx, data, config)
+	p.name = "create"
+	diags = append(diags, p.openDir()...)
+	defer func() { diags = append(diags, p.closeDir()...) }()
+	if diags.HasError() {
+		return
+	}
+	if _, ok := data.GetOk("program_create"); ok {
+		p.name += "create>create"
+		diags = append(diags, p.executeCommand("program_create")...)
+		if diags.HasError() {
+			return
+		}
+	} else {
+		p.name += "create>update"
+		diags = append(diags, p.executeCommand("program_update")...)
+	}
+	p.name = "create"
+
+	diags = append(diags, p.storeNewId()...)
+	if diags.HasError() {
+		return
+	}
+
+	diags = append(diags, p.setNewState()...)
+	if diags.HasError() {
+		return
+	}
 	return
 }
 
 func resourceCustomRead(ctx context.Context, data *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
 	config := meta.(*Config)
-	diags = append(diags, runProgram(ctx, data, config, "program_read")...)
+	p := Program(ctx, data, config)
+	p.name = "read"
+	diags = append(diags, p.openDir()...)
+	defer func() { diags = append(diags, p.closeDir()...) }()
+	if diags.HasError() {
+		return
+	}
+
+	diags = append(diags, p.executeCommand("program_read")...)
+	if diags.HasError() {
+		return
+	}
+
+	diags = append(diags, p.setNewState()...)
+	if diags.HasError() {
+		return
+	}
 	return
 }
 
 func resourceCustomUpdate(ctx context.Context, data *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
 	config := meta.(*Config)
-	diags = append(diags, runProgram(ctx, data, config, "program_update")...)
+	p := Program(ctx, data, config)
+	name := "update"
+	p.name = name
+	diags = append(diags, p.openDir()...)
+	defer func() { diags = append(diags, p.closeDir()...) }()
+	if diags.HasError() {
+		return
+	}
+	diags = append(diags, p.executeCommand("program_update")...)
+	if diags.HasError() {
+		return
+	}
+
+	data.SetId("")
+
 	return
 }
 
 func resourceCustomDelete(ctx context.Context, data *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
 	config := meta.(*Config)
-	diags = append(diags, runProgram(ctx, data, config, "program_delete")...)
+	diags = append(diags, runProgram(ctx, data, config, "delete", "program_delete")...)
 	return
 }
