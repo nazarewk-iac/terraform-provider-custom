@@ -14,6 +14,6 @@ test-release:
 
 .PHONY: release
 release:
-	[[ -n "${GITHUB_TOKEN}" ]] || GITHUB_TOKEN=$(shell bash -c 'read -s -p "GITHUB_TOKEN: " GITHUB_TOKEN ; echo "$GITHUB_TOKEN"')
+	GITHUB_TOKEN ?= $(shell bash -c 'read -s -p "GITHUB_TOKEN: " GITHUB_TOKEN ; echo "$GITHUB_TOKEN"')
 	export GITHUB_TOKEN
 	goreleaser
