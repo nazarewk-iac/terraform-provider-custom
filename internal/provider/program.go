@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 )
 
 type program struct {
@@ -102,12 +103,12 @@ func (p *program) prepareEnv() (env []string, diags diag.Diagnostics) {
 		return
 	}
 
-	env = append(env, fmt.Sprintf("%s=%s", "EXT_DIR", p.tmpDir))
-
+	env = append(env, fmt.Sprintf("%s=%s", "TF_CUSTOM_DIR", p.tmpDir))
+	var files []string
 	for name, _ := range p.files {
-		currentPath := path.Join(p.tmpDir, name)
-		env = append(env, fmt.Sprintf("EXT_FILE_%s=%s", name, currentPath))
+		files = append(files, name)
 	}
+	env = append(env, fmt.Sprintf("%s=%s", "TF_CUSTOM_MANAGED_FILES", strings.Join(files, ":")))
 	return
 }
 

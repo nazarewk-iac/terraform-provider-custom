@@ -32,20 +32,20 @@ const testAccResourceCustom = `locals {
   }
 
   cmd_update() {
-	file_name="$(cat "$EXT_FILE_input" | tee "$EXT_FILE_id" "$EXT_FILE_output")"
-	cat "$EXT_FILE_state" | tee "$EXT_FILE_state" > "$file_name"
+	file_name="$(cat "$TF_CUSTOM_DIR/input" | tee "$TF_CUSTOM_DIR/id" "$TF_CUSTOM_DIR/output")"
+	cat "$TF_CUSTOM_DIR/state" | tee "$TF_CUSTOM_DIR/state" > "$file_name"
   }
 
   cmd_read() {
-	file_name="$(cat "$EXT_FILE_input")"
+	file_name="$(cat "$TF_CUSTOM_DIR/input")"
 	cat "$file_name"
-	cat "$EXT_FILE_state"
-	echo -n "$file_name" > "$EXT_FILE_output"
-	cat "$file_name" > "$EXT_FILE_state"
+	cat "$TF_CUSTOM_DIR/state"
+	echo -n "$file_name" > "$TF_CUSTOM_DIR/output"
+	cat "$file_name" > "$TF_CUSTOM_DIR/state"
   }
   
   cmd_delete() {
-	rm "$(cat "$EXT_FILE_input")"
+	rm "$(cat "$TF_CUSTOM_DIR/input")"
   }
 
   main "$@"
