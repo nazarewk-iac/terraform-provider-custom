@@ -59,6 +59,14 @@ func resourceCustom() *schema.Resource {
 				Optional: true,
 				Default:  "",
 			},
+			"output": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"output_sensitive": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"state": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -89,12 +97,12 @@ func resourceCustomCreate(ctx context.Context, data *schema.ResourceData, meta i
 	}
 	p.name = "create"
 
-	diags = append(diags, p.storeNewId()...)
+	diags = append(diags, p.storeId()...)
 	if diags.HasError() {
 		return
 	}
 
-	diags = append(diags, p.setNewState()...)
+	diags = append(diags, p.storeAttributes("state", "output", "output_sensitive")...)
 	if diags.HasError() {
 		return
 	}
@@ -116,7 +124,7 @@ func resourceCustomRead(ctx context.Context, data *schema.ResourceData, meta int
 		return
 	}
 
-	diags = append(diags, p.setNewState()...)
+	diags = append(diags, p.storeAttributes("state", "output", "output_sensitive")...)
 	if diags.HasError() {
 		return
 	}

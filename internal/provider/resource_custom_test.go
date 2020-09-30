@@ -15,8 +15,8 @@ func TestAccResourceCustom(t *testing.T) {
 			{
 				Config: testAccResourceCustom,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestMatchResourceAttr(
-						"custom_resource.foo", "state", regexp.MustCompile("^.*\nqwe$")),
+					resource.TestMatchResourceAttr("custom_resource.foo", "state", regexp.MustCompile("^qwe$")),
+					resource.TestMatchResourceAttr("custom_resource.foo", "output", regexp.MustCompile("^/tmp/terraform-provider-custom_resource_test$")),
 				),
 			},
 		},
@@ -24,50 +24,39 @@ func TestAccResourceCustom(t *testing.T) {
 }
 
 const testAccResourceCustom = `locals {
-  create_update = <<EOT
-	file_name="$(cat "$EXT_FILE_input" | tee "$EXT_FILE_id")"
-	echo "$file_name" > "$EXT_FILE_state"
-	cat "$EXT_FILE_input_sensitive" | tee -a "$EXT_FILE_state" > "$file_name"
+  script = <<EOT
+  set -xeuo pipefail
+
+  cmd_update() {
+	file_name="$(cat "$EXT_FILE_input" | tee "$EXT_FILE_id" "$EXT_FILE_output")"
+	cat "$EXT_FILE_state" | tee "$EXT_FILE_state" > "$file_name"
+  }
+
+  cmd_read() {
+	file_name="$(cat "$EXT_FILE_input")"
+	cat "$file_name"
+	cat "$EXT_FILE_state"
+	echo -n "$file_name" > "$EXT_FILE_output"
+	cat "$file_name" > "$EXT_FILE_state"
+  }
+  
+  cmd_delete() {
+	rm "$(cat "$EXT_FILE_input")"
+  }
+  echo "$@"
+  "cmd_$@"
   EOT
+
+  program = ["sh", "-c", local.script, "command_string"]
 }
 
 resource "custom_resource" "foo" {
   input = "/tmp/terraform-provider-custom_resource_test"
-  input_sensitive = "qwe"
-  program_create = [
-    "sh",
-    "-xeuo",
-    "pipefail",
-    "-c",
-    local.create_update,
-  ]
-  program_read = [
-    "sh",
-    "-xeuo",
-    "pipefail",
-    "-c",
-    <<EOT
-	file_name="$(cat "$EXT_FILE_input")"
-	cat "$file_name"
-	cat "$EXT_FILE_state"
-	cat "$file_name" > "$EXT_FILE_state"
-  	EOT
-  ]
-  program_update = [
-    "sh",
-    "-xeuo",
-    "pipefail",
-    "-c",
-    local.create_update,
-  ]
-  program_delete = [
-    "sh",
-    "-xeuo",
-    "pipefail",
-    "-c",
-    <<EOT
-	rm "$(cat "$EXT_FILE_input")"
-  	EOT
-  ]
+  state = "qwe"
+
+  program_create = concat(local.program, ["update"])
+  program_read = concat(local.program, ["read"])
+  program_update = concat(local.program, ["update"])
+  program_delete = concat(local.program, ["delete"])
 }
 `

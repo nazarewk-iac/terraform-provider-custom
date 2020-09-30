@@ -34,14 +34,18 @@ func Program(ctx context.Context, data *schema.ResourceData, config *Config) *pr
 		"provider_input_sensitive": p.providerConfig.InputSensitive,
 		"input":                    p.data.Get("input").(string),
 		"input_sensitive":          p.data.Get("input_sensitive").(string),
+		"output":                   p.data.Get("output").(string),
+		"output_sensitive":         p.data.Get("output_sensitive").(string),
 		"state":                    newStateV.(string),
 		"old_state":                oldStateV.(string),
 		"id":                       p.data.Id(),
 	}
 
 	p.perms = map[string]os.FileMode{
-		"state": 0600,
-		"id":    0600,
+		"output":           0200,
+		"output_sensitive": 0200,
+		"state":            0600,
+		"id":               0600,
 	}
 
 	return p
@@ -134,7 +138,7 @@ func (p *program) executeCommand(key string) (diags diag.Diagnostics) {
 	return
 }
 
-func (p *program) storeNewId() (diags diag.Diagnostics) {
+func (p *program) storeId() (diags diag.Diagnostics) {
 	text, diags := p.readFile("id")
 	if diags.HasError() {
 		return
@@ -143,19 +147,21 @@ func (p *program) storeNewId() (diags diag.Diagnostics) {
 	return
 }
 
-func (p *program) setNewState() (diags diag.Diagnostics) {
-	text, diags := p.readFile("state")
-	if diags.HasError() {
-		return
-	}
+func (p *program) storeAttributes(attributes ...string) (diags diag.Diagnostics) {
+	for _, attribute := range attributes {
+		text, d := p.readFile(attribute)
+		diags = append(d, diags...)
+		if d.HasError() {
+			continue
+		}
 
-	if err := p.data.Set("state", text); err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  fmt.Sprintf("Error when setting \"state\" attribute during %s", p.name),
-			Detail:   err.Error(),
-		})
-		return
+		if err := p.data.Set(attribute, text); err != nil {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Error when setting %s attribute during %s", attribute, p.name),
+				Detail:   err.Error(),
+			})
+		}
 	}
 	return
 }
@@ -198,12 +204,12 @@ func runProgram(ctx context.Context, data *schema.ResourceData, config *Config, 
 		return
 	}
 
-	diags = append(diags, p.storeNewId()...)
+	diags = append(diags, p.storeId()...)
 	if diags.HasError() {
 		return
 	}
 
-	diags = append(diags, p.setNewState()...)
+	diags = append(diags, p.storeAttributes("state", "output", "output_sensitive")...)
 	if diags.HasError() {
 		return
 	}
@@ -213,6 +219,29 @@ func runProgram(ctx context.Context, data *schema.ResourceData, config *Config, 
 
 func (p *program) readFile(name string) (text string, diags diag.Diagnostics) {
 	fullPath := path.Join(p.tmpDir, name)
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  fmt.Sprintf("Error retrieving file information for %s", fullPath),
+			Detail:   err.Error(),
+		})
+		return
+	}
+	var readMode os.FileMode = 0400
+	oldMode := info.Mode()
+	couldNotRead := (info.Mode() & 0400) == 0
+
+	if couldNotRead {
+		if err := os.Chmod(fullPath, readMode); err != nil {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Error when making file readable (%#o -> %#o) %s", oldMode, readMode, fullPath),
+				Detail:   err.Error(),
+			})
+			return
+		}
+	}
 	content, err := ioutil.ReadFile(fullPath)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
@@ -222,6 +251,16 @@ func (p *program) readFile(name string) (text string, diags diag.Diagnostics) {
 		})
 	}
 	text = string(content)
+	if couldNotRead {
+		if err := os.Chmod(fullPath, oldMode); err != nil {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Error when reverting file mode (%#o -> %#o) for %s", readMode, oldMode, fullPath),
+				Detail:   err.Error(),
+			})
+			return
+		}
+	}
 	return
 }
 
