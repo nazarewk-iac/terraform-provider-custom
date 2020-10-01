@@ -10,7 +10,7 @@ description: |-
 
 Sample resource in the Terraform provider custom.
 
-Following files will be created in directory defined by `${TF_CUSTOM_DIR}`:
+Following files will be created in directory defined by `${TF_CUSTOM_DIR}` or `${TF_CUSTOM_DIR_ABS}`:
 - `provider_input` - (read-only) - inputs passed down from `provider` configuration
 - `input` - (read-only) - inputs passed down from the resource's attribute, see arguments reference
 - `input_sensitive` - (read-only) - inputs passed down from the resource's attribute, see arguments reference

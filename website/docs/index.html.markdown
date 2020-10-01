@@ -36,7 +36,7 @@ Below design decisions are supposed to help with above:
     - only plumbing required to share the data with the `program`,
 
 1. interface with the `program` through files in a temporary directory:
-    - temporary directory path is exposed to the program through `TF_CUSTOM_DIR` environment variable,
+    - temporary directory path is exposed to the program through `${TF_CUSTOM_DIR}` and `${TF_CUSTOM_DIR_ABS}` environment variables,
     - filesystem permissions reflect what can be done with them,
 
 1. attribute names map directly to file names:
@@ -50,7 +50,7 @@ Below design decisions are supposed to help with above:
 
 ## Program interface and guidelines
 
-1. Program receives temporary directory path in `${TF_CUSTOM_DIR}` environment variable.
+1. Program receives temporary directory path in `${TF_CUSTOM_DIR}`/`${TF_CUSTOM_DIR_ABS}` environment variable.
 
 1. Program interacts with files named after resource attributes and `id`, `old_state` and `provider_input` files.
 

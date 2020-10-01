@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -103,6 +104,18 @@ func (p *program) prepareEnv() (env []string, diags diag.Diagnostics) {
 	}
 
 	env = append(env, fmt.Sprintf("%s=%s", "TF_CUSTOM_DIR", p.tmpDir))
+
+	if abs, err := filepath.Abs(p.tmpDir); err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("Failed converting %#v to absolute path!", p.tmpDir),
+			Detail:   err.Error(),
+		})
+		return
+	} else {
+		env = append(env, fmt.Sprintf("%s=%s", "TF_CUSTOM_DIR_ABS", abs))
+	}
+
 	var files []string
 	for name, _ := range p.files {
 		files = append(files, name)
