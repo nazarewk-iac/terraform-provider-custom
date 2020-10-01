@@ -48,7 +48,7 @@ Below design decisions are supposed to help with above:
 
 1. well defined `program` interface files
 
-### Program interface and guidelines
+## Program interface and guidelines
 
 1. Program receives temporary directory path in `${TF_CUSTOM_DIR}` environment variable.
 
