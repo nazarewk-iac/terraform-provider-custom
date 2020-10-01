@@ -55,9 +55,10 @@ func resourceCustom() *schema.Resource {
 				Default:  "",
 			},
 			"input_sensitive": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "",
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+				Default:   "",
 			},
 			"state": {
 				Type:     schema.TypeString,
@@ -69,8 +70,9 @@ func resourceCustom() *schema.Resource {
 				Computed: true,
 			},
 			"output_sensitive": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:      schema.TypeString,
+				Sensitive: true,
+				Computed:  true,
 			},
 		},
 	}
