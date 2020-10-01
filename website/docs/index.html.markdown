@@ -16,7 +16,7 @@ See the Terraform Registry's [Documentation tab](https://registry.terraform.io/p
 
 Source code available at [github.com/nazarewk-iac/terraform-provider-custom](https://github.com/nazarewk-iac/terraform-provider-custom)
 
-# Provider design
+## Provider design
 
 The provider's primary goal is to be *quickly finished* as a feature-complete MVP (Minimal Viable Product) enabling Terraform developers to define custom logic.
 Most of the efforts will go to thoroughly testing the code.
@@ -48,7 +48,7 @@ Below design decisions are supposed to help with above:
 
 1. well defined `program` interface files
 
-## Program interface and guidelines
+### Program interface and guidelines
 
 1. Program receives temporary directory path in `${TF_CUSTOM_DIR}` environment variable.
 
