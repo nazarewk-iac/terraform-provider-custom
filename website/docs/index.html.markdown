@@ -29,14 +29,14 @@ Below design decisions are supposed to help with above:
 
 1. don't impose any code structure on the scripts:
     - just run the user-provided arguments list as-is
- 
+
 1. plain-text (`string` type) resource attributes:
     - use Terraform/HCL features to handle them as structured data, eg: `jsonencode()` and `jsondecode()` pair,
     - provider users are free to handle the data as they see fit,
     - only plumbing required to share the data with the `program`,
 
 1. interface with the `program` through files in a temporary directory:
-    - temporary directory path is exposed to the program through `${TF_CUSTOM_DIR}` and `${TF_CUSTOM_DIR_ABS}` environment variables,
+    - temporary directory path is exposed to the program through `${TF_EXTERNAL_DIR}` and `${TF_EXTERNAL_DIR_ABS}` environment variables,
     - filesystem permissions reflect what can be done with them,
 
 1. attribute names map directly to file names:
@@ -44,35 +44,39 @@ Below design decisions are supposed to help with above:
 
 1. only one way to pass the data down to `program`:
     - through string attributes mapped to files,
-    - environment variables are NOT configurable, if you really need them you can `source ${TF_CUSTOM_DIR}/input_sensitive` in shell program,
+    - environment variables are NOT configurable, if you really need them you can `source ${TF_EXTERNAL_DIR}/input_sensitive` in shell program,
 
 1. well defined `program` interface files
 
 ## Program interface and guidelines
 
-1. Program receives temporary directory path in `${TF_CUSTOM_DIR}`/`${TF_CUSTOM_DIR_ABS}` environment variable.
+1. Program receives temporary directory path in `${TF_EXTERNAL_DIR}`/`${TF_EXTERNAL_DIR_ABS}` environment variable.
 
 1. Program interacts with files named after resource attributes and `id`, `old_state` and `provider_input` files.
 
     1. Program reads data from `provider_input`/`input`/`input_sensitive`:
         1. `provider_input` is the `input` attribute of `provider` configuration block,
-    
+
     1. Program must fill-in `id` during create and update representing current and future values of `custom_resource.*.id`:
-    
-        1. Program empties `id` (eg. `echo -n > "${TF_CUSTOM_DIR}/id"`) during read when the resource disappeared (externally).
-    
+
+        1. Program empties `id` (eg. `echo -n > "${TF_EXTERNAL_DIR}/id"`) during read when the resource disappeared (externally).
+
     1. Program stores the managed data in `state`:
-    
+
         1. Program can read previous version of managed data from `old_state`,
         2. Program should write to `state` during read,
-    
+
     1. Program writes to `output`/`output_sensitive` to expose additional data.
 
 
 ## Example Usage
 
 ```hcl
-provider "custom" {
+required_providers {
+  external = {
+    source  = "nazarewk/external"
+    version = "3.0.0"
+  }
 }
 
 locals {
@@ -84,29 +88,29 @@ locals {
   }
 
   cmd_update() {
-	file_name="$(cat "$TF_CUSTOM_DIR/input" | tee "$TF_CUSTOM_DIR/id" "$TF_CUSTOM_DIR/output")"
-	cat "$TF_CUSTOM_DIR/state" | tee "$TF_CUSTOM_DIR/state" > "$file_name"
+	file_name="$(cat "$TF_EXTERNAL_DIR/input" | tee "$TF_EXTERNAL_DIR/id" "$TF_EXTERNAL_DIR/output")"
+	cat "$TF_EXTERNAL_DIR/state" | tee "$TF_EXTERNAL_DIR/state" > "$file_name"
   }
 
   cmd_read() {
-	file_name="$(cat "$TF_CUSTOM_DIR/input")"
+	file_name="$(cat "$TF_EXTERNAL_DIR/input")"
 	cat "$file_name"
-	cat "$TF_CUSTOM_DIR/state"
-	echo -n "$file_name" > "$TF_CUSTOM_DIR/output"
-	cat "$file_name" > "$TF_CUSTOM_DIR/state"
-  }
-  
-  cmd_delete() {
-	rm "$(cat "$TF_CUSTOM_DIR/input")"
+	cat "$TF_EXTERNAL_DIR/state"
+	echo -n "$file_name" > "$TF_EXTERNAL_DIR/output"
+	cat "$file_name" > "$TF_EXTERNAL_DIR/state"
   }
 
-  main "$@"
+  cmd_delete() {
+	rm "$(cat "$TF_EXTERNAL_DIR/input")"
+  }
+
+  main "$0"
   EOT
 
-  program = ["sh", "-c", local.script, "command_string"]
+  program = ["bash", "-c", local.script]
 }
 
-resource "custom_resource" "foo" {
+resource "external" "foo" {
   input = "/tmp/terraform-provider-custom_resource_test"
   state = "qwe"
 
@@ -121,4 +125,4 @@ resource "custom_resource" "foo" {
 
 The following arguments are supported:
 
-* `input` - (`${TF_CUSTOM_DIR}/provider_input`) input to be passed down to all resources, but not stored in the terraform state file
+* `input` - (`${TF_EXTERNAL_DIR}/provider_input`) input to be passed down to all resources, but not stored in the terraform state file
